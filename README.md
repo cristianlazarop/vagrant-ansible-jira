@@ -1,5 +1,5 @@
 # vagrant-ansible-jira
 
-Editar la version de Jira en el play.yml (cambiar todo lo que pone 8.3.1 por la version que queramos)
+Modify Jira version on play.yml (change 8.3.1 for the version we want)
 
-Una vez ejecutado vagrant up y todo creado, acceder a http://192.168.33.10:8080/ para proceder con la instalacion de Jira
+Once saved, execute vagrant up. When finish, access to http://192.168.33.10:8080/ to proceed with Jira installation.
