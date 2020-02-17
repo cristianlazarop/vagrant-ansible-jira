@@ -1,91 +1,164 @@
 ---
-- name: Test random filter
-  hosts: all
-  become: yes
-  gather_facts: False
-  vars:
-  tasks:
-    - apt: "name={{ item }} state=present"
-      with_items:
-        - git
-        - wget
-        - curl
-        - unzip
-        - openssl
-        - systemd
+  - name: Test random filter
+    hosts: all
+    become: yes
+    gather_facts: False
+    vars:
+    tasks:
+      - apt: "name={{ item }} state=present"
+        with_items:
+          - git
+          - wget
+          - curl
+          - unzip
+          - openssl
+          - systemd
+          
+      - name: Download jdk 8
+        get_url:
+          url:     https://github.com/frekele/oracle-java/releases/download/8u201-b09/jdk-8u201-linux-x64.tar.gz
+          dest:    /home/vagrant/
+  
+      - name: Install jdk8
+        shell: |
+          sudo mkdir /usr/lib/jvm
+          cd /usr/lib/jvm
+          sudo tar -xvzf /home/vagrant/jdk-8u201-linux-x64.tar.gz
+        become: true  
+  
+      - name: Copy plugin list to Jenkins home
+        copy:
+          src: "environment" 
+          dest: "/etc/"  
+        become: true
+  
+      - name: alternatives link for "java"
+        alternatives:
+           name: java
+           link: /usr/bin/java
+           path: "/usr/lib/jvm/jdk1.8.0_201/bin/java"
+        become: true
+  
+      - name: alternatives link for "javac"
+        alternatives:
+           name: javac
+           link: /usr/bin/javac
+           path: "/usr/lib/jvm/jdk1.8.0_201/bin/javac"
+        become: true
+  
+      - name: alternatives link for "jar"
+        alternatives:
+           name: jar
+           link: /usr/bin/jar
+           path: "/usr/lib/jvm/jdk1.8.0_201/bin/jar"
+        become: true
+  
+      - name: Download jira
+        get_url:
+          url: https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-8.5.3.tar.gz
+          dest: /home/vagrant 
+  
+      - name: Install Jira
+        shell: |
+          mkdir /home/vagrant/jirasoftware
+          tar -xzf atlassian-jira-software-8.5.3.tar.gz -C /home/vagrant/jirasoftware
+          cd /home/vagrant/jirasoftware
+          chown -R vagrant /home/vagrant/jirasoftware
+          chmod -R u=rwx,go-rwx /home/vagrant/jirasoftware
+          mkdir /home/vagrant/jirasoftware-home
+          chown -R vagrant /home/vagrant/jirasoftware-home
+          chmod -R u=rwx,go-rwx /home/vagrant/jirasoftware-home 
+        args:
+          creates: "/home/vagrant/jirasoftware/atlassian-jira-software-8.5.3-standalone/bin/start-jira.sh"
+        become: true  
         
-    - name: Download jdk 8
-      get_url:
-        url:     https://github.com/frekele/oracle-java/releases/download/8u201-b09/jdk-8u201-linux-x64.tar.gz
-        dest:    /home/vagrant/
-
-    - name: Install jdk8
-      shell: |
-        sudo mkdir /usr/lib/jvm
-        cd /usr/lib/jvm
-        sudo tar -xvzf /home/vagrant/jdk-8u201-linux-x64.tar.gz
-      become: true  
-
-    - name: Copy plugin list to Jenkins home
-      copy:
-        src: "environment" 
-        dest: "/etc/"  
-      become: true
-
-    - name: alternatives link for "java"
-      alternatives:
-         name: java
-         link: /usr/bin/java
-         path: "/usr/lib/jvm/jdk1.8.0_201/bin/java"
-      become: true
-
-    - name: alternatives link for "javac"
-      alternatives:
-         name: javac
-         link: /usr/bin/javac
-         path: "/usr/lib/jvm/jdk1.8.0_201/bin/javac"
-      become: true
-
-    - name: alternatives link for "jar"
-      alternatives:
-         name: jar
-         link: /usr/bin/jar
-         path: "/usr/lib/jvm/jdk1.8.0_201/bin/jar"
-      become: true
-
-    - name: Download jira
-      get_url:
-        url: https://product-downloads.atlassian.com/software/jira/downloads/atlassian-jira-software-8.3.1.tar.gz
-        dest: /home/vagrant 
-
-    - name: Install Jira
-      shell: |
-        mkdir /home/vagrant/jirasoftware
-        tar -xzf atlassian-jira-software-8.3.1.tar.gz -C /home/vagrant/jirasoftware
-        cd /home/vagrant/jirasoftware
-        chown -R vagrant /home/vagrant/jirasoftware
-        chmod -R u=rwx,go-rwx /home/vagrant/jirasoftware
-        mkdir /home/vagrant/jirasoftware-home
-        chown -R vagrant /home/vagrant/jirasoftware-home
-        chmod -R u=rwx,go-rwx /home/vagrant/jirasoftware-home 
-      args:
-        creates: "/home/vagrant/jirasoftware/atlassian-jira-software-8.3.1-standalone/bin/start-jira.sh"
-      become: true  
-      
-    - name: Copy jira home to jira
-      copy:
-        src: "jira-application.properties" 
-        dest: "/home/vagrant/jirasoftware/atlassian-jira-software-8.3.1-standalone/atlassian-jira/WEB-INF/classes"  
-      become: true
-      
-    - name: Copy jira service 
-      copy:
-        src: "jira.service" 
-        dest: "/etc/systemd/system/"  
-      become: true
-      
-    - name: Start Jira
-      shell: |
-        sudo systemctl enable jira
-        sudo systemctl start jira
-      become: true  
+      - name: Copy jira home to jira
+        copy:
+          src: "jira-application.properties" 
+          dest: "/home/vagrant/jirasoftware/atlassian-jira-software-8.5.3-standalone/atlassian-jira/WEB-INF/classes"  
+        become: true
+        
+      - name: Create Jira Plugin Dir
+        file:
+          path: "/home/vagrant/jirasoftware-home/plugins/installed-plugins"
+          owner: vagrant
+          group: vagrant
+          state: directory
+  
+      - name: Download jira plugins
+        get_url:
+          url:     https://github.com/cristianlazarop/oracle-java/releases/download/plugs/plugins-jira853.tar.gz
+          dest:    /home/vagrant/
+  
+      - name: Install Jira
+        shell: |
+          cd /home/vagrant
+          tar -zxf plugins-jira853.tar.gz 
+          cd /home/vagrant/plugins-jira
+          mv * /home/vagrant/jirasoftware-home/plugins/installed-plugins
+      # - name: Copy Anonymized Project View Plugin file
+      #   copy:
+      #     src: files/WEB-INF/dependencies/
+      #     dest: "/home/vagrant/jirasoftware-home/plugins/installed-plugins/"
+  
+      - name: Download SSOOpenID Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1217688/version/1001002302" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/jira-oauth-1.1.23.jar"
+        tags: dot.jira
+    
+      - name: Download jira_git_plugin Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/4984/version/1004451" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/jira_git_plugin-3.4.3.jar"
+        tags: dot.jira
+    
+      - name: Download SCM Activity for Jira Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1215449/version/1001050" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/jira-scm-activity-plugin-2.0.6.jar"
+        tags: dot.jira
+    
+      - name: Download jira-git-integration Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1220080/version/300800300" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/jira-git-integration-3.8.3.jar"
+        tags: dot.jira
+        
+      - name: Download Structure Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/34717/version/30600" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/structure-5.6.3.jar"
+        tags: dot.jira
+        
+      - name: Download BigPicture Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1212259/version/40002003292" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/bigpicture-jiraserver-7.9.5.jar"
+        tags: dot.jira
+        
+      - name: Download XRay Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1211769/version/2003006022" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/xray-3.6.2.jar"
+        tags: dot.jira
+        
+      - name: Download Excel Connector Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/37857/version/300600200" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/excel2jira-3.6.2.jar"
+        tags: dot.jira  
+        
+      - name: Download Automation for Jira Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1215460/version/300003710" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/automation-for-jira-7.1.3.jar"
+        tags: dot.jira  
+        
+      - name: Download JSU Automation Suite for Jira Workflows Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/5048/version/1000251" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/jira-suite-utilities-2.21.0.jar"
+        tags: dot.jira    
+        
+      - name: Download Power BI Connector for Jira Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1221150/version/200100100" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/powerbi-connector-jira-2.1.1.jar"
+        tags: dot.jira
+        
+      - name: Outlook email for Jira Plugin
+        shell: curl --fail -L  "https://marketplace.atlassian.com/download/apps/1213138/version/300300000" -o "/home/vagrant/jirasoftware-home/plugins/installed-plugins/cloud-3.3.0.jar"
+        tags: dot.jira
+  
+  
+      - name: Copy jira service 
+        copy:
+          src: "jira.service" 
+          dest: "/etc/systemd/system/"  
+        become: true
+            
+      - name: Start Jira
+        shell: |
+          sudo systemctl enable jira
+          sudo systemctl start jira
+        become: true  
+  
