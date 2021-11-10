@@ -1,0 +1,18 @@
+---
+# See https://github.com/discourse/discourse_docker/blob/master/templates/postgres.13.template.yml#L204
+- set_fact:
+    password: "jira"
+
+- name: Set up required jira DB schema
+  shell: "{{ item }}"
+  become: yes
+  with_items:
+    - su postgres -c 'createdb jira' || true
+    - su postgres -c 'psql jira -c "create user jira;"' || true
+    - su postgres -c "psql jira -c \"ALTER USER jira WITH PASSWORD 'jira';\"" || true
+    - su postgres -c 'psql jira -c "grant all privileges on database jira to jira;"' || true
+    - su postgres -c 'psql jira -c "alter schema public owner to jira;"'
+    - su postgres -c 'psql template1 -c "create extension if not exists hstore;"'
+    - su postgres -c 'psql template1 -c "create extension if not exists pg_trgm;"'
+    - su postgres -c 'psql jira -c "create extension if not exists hstore;"'
+    - su postgres -c 'psql jira -c "create extension if not exists pg_trgm;"'

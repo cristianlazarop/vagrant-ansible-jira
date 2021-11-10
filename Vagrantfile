@@ -1,6 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-
+BOX_IMAGE = "gunnix/ubuntu_server_20.04.1_LTS"
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -10,13 +10,35 @@ Vagrant.configure("2") do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
+  config.vm.define "postgres" do |postgres|
+    postgres.vm.box = BOX_IMAGE
+    postgres.vm.box_version = "0.0.1"
+    postgres.vm.hostname = "postgres"
+    postgres.vm.network :private_network, ip: "192.168.33.13"
+    postgres.vm.network "forwarded_port", guest: 5432, host: 5432
+    postgres.vm.provision "shell", inline: "apt-get update && apt-get -y install git wget curl vim net-tools jq ncdu axel open-vm-tools tcptraceroute python3-pip python3-setuptools"
+  
+    postgres.vm.provision "ansible" do |ansible|
+        ansible.playbook = "./01_postgres_config/playbook.yml"
+  
+      end
+end
+  config.vm.define "jira" do |jira|
+
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "bento/ubuntu-18.04"
+  jira.vm.box = BOX_IMAGE
+  jira.vm.box_version = "0.0.1"
+    # config.vm.box = "jira-liza-imported.box"
+    jira.vm.network "private_network", ip: "192.168.33.10"
+    jira.vm.synced_folder "data/", "/home/vagrant/vagrant_data"
 
-  config.vm.provision :ansible do |ansible|
+    jira.vm.provision :ansible do |ansible|
     ansible.playbook = "play.yml"
   end
+end
+
+
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
@@ -41,7 +63,6 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-   config.vm.network "private_network", ip: "192.168.33.10"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -53,7 +74,6 @@ Vagrant.configure("2") do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -77,4 +97,5 @@ Vagrant.configure("2") do |config|
   #   apt-get update
   #   apt-get install -y apache2
   # SHELL
+
 end

@@ -1,0 +1,40 @@
+---
+- name: Install pgdg package signing key
+  apt_key:
+    keyserver: pgp.mit.edu
+    id: ACCC4CF8
+  register: __postgresql_apt_key_result
+  until: __postgresql_apt_key_result is succeeded
+  retries: 5
+  delay: 5
+
+- name: Install pgdg repository
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"
+    update_cache: yes
+
+- name: Install PostgreSQL
+  apt:
+    name: postgresql{{ '-' ~ postgresql_version if postgresql_version is defined else '' }}
+  register: __postgresql_apt_result
+  until: __postgresql_apt_result is succeeded
+  retries: 5
+  delay: 5
+
+- name: Add listen_addresses
+  lineinfile:
+    path: "/etc/postgresql/13/main/postgresql.conf"
+    line: "listen_addresses = '*'"
+    create: yes
+
+- name: Add hosts
+  lineinfile:
+    path: "/etc/postgresql/13/main/pg_hba.conf"
+    line: "host all all 0.0.0.0/0 trust"
+    create: yes
+
+- name: Restart PostgreSQL
+  service:
+    name: postgresql
+    enabled: true
+    state: restarted

@@ -1,0 +1,11 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  vars:
+    options: "all"
+
+  roles:
+    # - {role: install, when: "'install' in options"}
+    - { role: install }
+    - { role: config }

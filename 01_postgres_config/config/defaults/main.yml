@@ -1,0 +1,4 @@
+---
+discourse_db_name: jira
+discourse_db_user: jira
+discourse_db_password: "jira"
